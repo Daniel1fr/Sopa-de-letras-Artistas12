@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sopa de Letras con Artistas</title>
+<style>
+  body {
+    font-family: "Poppins", sans-serif;
+    background: linear-gradient(135deg, #faf0e6, #f6d365);
+    text-align: center;
+    color: #333;
+    padding: 10px;
+    margin: 0;
+  }
+
+  h1 {
+    color: #5a3e2b;
+    text-shadow: 1px 1px 2px #fff;
+    font-size: 1.8em;
+    margin-bottom: 5px;
+  }
+
+  p {
+    font-size: 1em;
+    margin: 5px 0 15px;
+  }
+
+  .grid {
+    display: inline-grid;
+    grid-template-columns: repeat(15, minmax(20px, 1fr));
+    gap: 3px;
+    margin: 10px auto;
+    border: 3px solid #5a3e2b;
+    background: #fff8ee;
+    padding: 10px;
+    touch-action: none;
+  }
+
+  .cell {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fffdf6;
+    border: 1px solid #ddd;
+    font-weight: bold;
+    cursor: pointer;
+    user-select: none;
+    font-size: clamp(10px, 2.5vw, 18px);
+  }
+
+  .cell.seleccionada {
+    background-color: #f6c177;
+    color: white;
+  }
+
+  .cell.encontrada {
+    background-color: #9dd6a3;
+    color: white;
+  }
+
+  ul {
+    list-style: none;
+    padding: 0;
+    margin-top: 15px;
+  }
+
+  li {
+    font-size: 16px;
+    margin: 4px 0;
+  }
+
+  li.encontrada {
+    text-decoration: line-through;
+    color: #777;
+  }
+
+  button {
+    background: #5a3e2b;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 10px;
+    cursor: pointer;
+    margin-top: 15px;
+    transition: 0.3s;
+    font-size: 16px;
+  }
+
+  button:hover {
+    background: #7c5638;
+  }
+
+  footer {
+    margin-top: 20px;
+    font-size: 14px;
+    color: #666;
+  }
+</style>
+</head>
+<body>
+<h1>🎨 Sopa de Letras con Artistas</h1>
+<p>Encuentra los 6 artistas ocultos. ¡Podés tocar las letras para seleccionarlas!</p>
+
+<div class="grid" id="sopa"></div>
+
+<h2>Artistas a encontrar:</h2>
+<ul id="lista">
+  <li>VAN GOGH</li>
+  <li>PICASSO</li>
+  <li>MONET</li>
+  <li>LEONARDO</li>
+  <li>REMBRANDT</li>
+  <li>KLIMT</li>
+</ul>
+
+<button id="nuevo">🔄 Nueva Sopa</button>
+
+<footer>Hecho con 🎨 por Daniel Arnedo</footer>
+
+<script>
+const grid = document.getElementById('sopa');
+const letras = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const filas = 15, columnas = 15;
+const palabras = ["VANGOGH", "PICASSO", "MONET", "LEONARDO", "REMBRANDT", "KLIMT"];
+
+let sopa = [];
+let seleccion = [];
+let encontradas = [];
+
+function generarSopa() {
+  sopa = Array.from({length: filas}, () => Array(columnas).fill(null));
+  colocarPalabras();
+  rellenar();
+  dibujar();
+}
+
+function colocarPalabras() {
+  for (let palabra of palabras) {
+    let colocada = false;
+    while (!colocada) {
+      let fila = Math.floor(Math.random() * filas);
+      let col = Math.floor(Math.random() * columnas);
+      let direccion = Math.floor(Math.random() * 8);
+      let fDir = [0, 1, 1, 1, 0, -1, -1, -1][direccion];
+      let cDir = [1, 1, 0, -1, -1, -1, 0, 1][direccion];
+      let finFila = fila + fDir * (palabra.length - 1);
+      let finCol = col + cDir * (palabra.length - 1);
+      if (finFila < 0 || finFila >= filas || finCol < 0 || finCol >= columnas) continue;
+
+      let puede = true;
+      for (let i = 0; i < palabra.length; i++) {
+        let f = fila + i * fDir;
+        let c = col + i * cDir;
+        if (sopa[f][c] && sopa[f][c] !== palabra[i]) { puede = false; break; }
+      }
+      if (!puede) continue;
+
+      for (let i = 0; i < palabra.length; i++) {
+        let f = fila + i * fDir;
+        let c = col + i * cDir;
+        sopa[f][c] = palabra[i];
+      }
+      colocada = true;
+    }
+  }
+}
+
+function rellenar() {
+  for (let i = 0; i < filas; i++) {
+    for (let j = 0; j < columnas; j++) {
+      if (!sopa[i][j]) sopa[i][j] = letras[Math.floor(Math.random() * letras.length)];
+    }
+  }
+}
+
+function dibujar() {
+  grid.innerHTML = "";
+  sopa.forEach((fila, fi) => {
+    fila.forEach((letra, co) => {
+      const div = document.createElement("div");
+      div.className = "cell";
+      div.textContent = letra;
+      div.dataset.fila = fi;
+      div.dataset.col = co;
+      div.addEventListener("click", seleccionarCelda);
+      grid.appendChild(div);
+    });
+  });
+}
+
+function seleccionarCelda(e) {
+  const celda = e.target;
+  celda.classList.toggle("seleccionada");
+  const f = parseInt(celda.dataset.fila);
+  const c = parseInt(celda.dataset.col);
+  const idx = seleccion.findIndex(pos => pos.f === f && pos.c === c);
+  if (idx >= 0) seleccion.splice(idx, 1);
+  else seleccion.push({f, c});
+
+  verificarPalabra();
+}
+
+function verificarPalabra() {
+  const letrasSeleccionadas = seleccion.map(pos => sopa[pos.f][pos.c]).join("");
+  for (let palabra of palabras) {
+    if (letrasSeleccionadas === palabra) {
+      seleccion.forEach(pos => {
+        document.querySelector(`.cell[data-fila="${pos.f}"][data-col="${pos.c}"]`).classList.add("encontrada");
+      });
+      seleccion = [];
+      marcarEncontrada(palabra);
+      return;
+    }
+  }
+}
+
+function marcarEncontrada(palabra) {
+  if (!encontradas.includes(palabra)) {
+    encontradas.push(palabra);
+    const items = document.querySelectorAll("#lista li");
+    items.forEach(li => {
+      if (li.textContent.replace(" ", "") === palabra) li.classList.add("encontrada");
+    });
+    if (encontradas.length === palabras.length) {
+      setTimeout(() => alert("🎉 ¡Encontraste todos los artistas!"), 300);
+    }
+  }
+}
+
+document.getElementById("nuevo").addEventListener("click", () => {
+  seleccion = [];
+  encontradas = [];
+  document.querySelectorAll("li").forEach(li => li.classList.remove("encontrada"));
+  generarSopa();
+});
+
+generarSopa();
+</script>
+</body>
+</html>
